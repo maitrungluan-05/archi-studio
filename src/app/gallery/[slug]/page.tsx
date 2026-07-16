@@ -10,7 +10,7 @@ import {
 import { getMockAssetBySlug, getMockAssets, type MockAsset, type MockRightsHolderRole } from "@/lib/mock-data";
 import { getPrisma } from "@/lib/prisma";
 import { AssetCard } from "@/components/asset-card";
-import { formatNumber, formatDate, slugify } from "@/lib/utils";
+import { formatNumber, formatDate, formatUsd, slugify } from "@/lib/utils";
 import { SITE, LICENSE_TYPES } from "@/lib/constants";
 import { generateImageMetadata } from "@/lib/asset-utils";
 
@@ -267,7 +267,7 @@ export default async function GalleryDetailPage({
               {asset.displayPrice && (
                 <div className="mb-4">
                   <p className="text-caption mb-1">Display Price</p>
-                  <p className="text-2xl font-bold text-primary">{asset.displayPrice}</p>
+                  <p className="text-2xl font-bold text-primary">{formatUsd(asset.displayPrice)}</p>
                 </div>
               )}
               <div className="flex gap-2">

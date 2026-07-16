@@ -28,7 +28,7 @@ export async function GET(
 
     const prisma = getPrisma();
     const asset = prisma
-      ? await prisma.asset.findFirst({ where: { OR: [{ id }, { slug: id }] }, include: { rightsHolders: true, category: true, collection: true } })
+      ? await prisma.asset.findFirst({ where: { OR: [{ id }, { slug: id }] }, include: { rightsHolders: true, category: true, collection: true, tags: { include: { tag: true } } } })
       : getMockAssets().find((item) => item.id === id || item.slug === id);
 
     if (!asset) {
@@ -60,12 +60,19 @@ export async function PUT(
     if (!existing) return errorResponse("Không tìm thấy tài sản", 404);
     const parsed = assetUpdateSchema.safeParse(await request.json());
     if (!parsed.success) return errorResponse(parsed.error.issues[0]?.message || "Dữ liệu cập nhật không hợp lệ", 400);
-    const { copyrightOwner, archiveDate, ...assetData } = parsed.data;
+    const { copyrightOwner, archiveDate, category, tags, displayPrice, ...assetData } = parsed.data;
     const updated = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const savedAsset = await tx.asset.update({
         where: { id: existing.id },
         data: {
           ...assetData,
+          displayPrice: displayPrice ? displayPrice.replace(/[$,\s]/g, "") : null,
+          keywords: tags ?? assetData.keywords,
+          ...(category !== undefined ? {
+            categoryId: category
+              ? (await tx.category.findUnique({ where: { name: category }, select: { id: true } }))?.id ?? null
+              : null,
+          } : {}),
           ...(archiveDate ? { createdAt: archiveDate, copyrightYear: archiveDate.getUTCFullYear() } : {}),
         },
       });

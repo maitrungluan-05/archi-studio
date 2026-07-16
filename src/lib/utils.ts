@@ -27,6 +27,12 @@ export function formatNumber(num: number): string {
   return num.toLocaleString();
 }
 
+export function formatUsd(value: string | number): string {
+  const amount = typeof value === "number" ? value : Number(value.replace(/[$,\s]/g, ""));
+  if (!Number.isFinite(amount)) return String(value);
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
+}
+
 export function slugify(text: string): string {
   return text
     .toLowerCase()

@@ -64,6 +64,7 @@ export const assetUpdateSchema = z.object({
   description: z.string().trim().max(5000).nullable().optional(),
   story: z.string().trim().max(10000).nullable().optional(),
   imageContent: z.string().trim().max(5000).nullable().optional(),
+  displayPrice: z.string().regex(/^\d+(\.\d{0,2})?$/, "Price must be a valid USD amount").nullable().optional(),
   status: assetStatusSchema.optional(),
   publishDate: z.iso.datetime().transform((value) => new Date(value)).nullable().optional(),
   archiveDate: z.iso.datetime().transform((value) => new Date(value)).optional(),
@@ -81,6 +82,8 @@ export const assetUpdateSchema = z.object({
   country: z.string().trim().max(120).nullable().optional(),
   city: z.string().trim().max(120).nullable().optional(),
   location: z.string().trim().max(240).nullable().optional(),
+  category: z.string().trim().max(160).nullable().optional(),
+  tags: z.string().trim().max(2000).nullable().optional(),
 }).strict();
 
 // ============================================================

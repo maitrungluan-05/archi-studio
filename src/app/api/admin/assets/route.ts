@@ -206,7 +206,7 @@ export async function POST(request: NextRequest) {
         description: String(body.get("description") || "").trim() || null,
         story: String(body.get("story") || "").trim() || null,
         keywords: String(body.get("tags") || "").trim() || null,
-        displayPrice: String(body.get("displayPrice") || "").trim() || null,
+        displayPrice: String(body.get("displayPrice") || "").replace(/[$,\s]/g, "") || null,
         licenseType: String(body.get("licenseType") || "RIGHTS_MANAGED") as "RIGHTS_MANAGED" | "ROYALTY_FREE" | "EDITORIAL" | "PERSONAL" | "COMMERCIAL",
         originalUrl: publicData.publicUrl,
         thumbnailUrl: publicData.publicUrl,

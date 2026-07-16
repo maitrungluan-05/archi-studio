@@ -3,9 +3,18 @@ import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET;
-const ADMIN_EMAIL = process.env.ARCHI_ADMIN_EMAIL;
-const ADMIN_PASSWORD_HASH = process.env.ARCHI_ADMIN_PASSWORD_HASH;
+function cleanEnvValue(value: string | undefined): string | undefined {
+  const trimmed = value?.trim();
+  if (!trimmed) return undefined;
+  const quote = trimmed[0];
+  return (quote === '"' || quote === "'") && trimmed.at(-1) === quote
+    ? trimmed.slice(1, -1)
+    : trimmed;
+}
+
+const JWT_SECRET = cleanEnvValue(process.env.JWT_SECRET);
+const ADMIN_EMAIL = cleanEnvValue(process.env.ARCHI_ADMIN_EMAIL)?.toLowerCase();
+const ADMIN_PASSWORD_HASH = cleanEnvValue(process.env.ARCHI_ADMIN_PASSWORD_HASH)?.replace(/\\\$/g, "$");
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,7 +28,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Vui lòng nhập email và mật khẩu hợp lệ" }, { status: 400 });
     }
 
-    if (email !== ADMIN_EMAIL) {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (normalizedEmail !== ADMIN_EMAIL) {
       return NextResponse.json({ error: "Email hoặc mật khẩu không đúng" }, { status: 401 });
     }
 
@@ -28,7 +38,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Email hoặc mật khẩu không đúng" }, { status: 401 });
     }
 
-    const token = jwt.sign({ email, role: "admin" }, JWT_SECRET, {
+    const token = jwt.sign({ email: normalizedEmail, role: "admin" }, JWT_SECRET, {
       expiresIn: rememberMe ? "30d" : "8h",
     });
 

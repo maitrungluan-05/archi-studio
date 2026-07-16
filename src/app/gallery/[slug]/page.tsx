@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cache } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -17,8 +18,7 @@ async function getGalleryAsset(slug: string): Promise<MockAsset | undefined> {
   const prisma = getPrisma();
 
   if (prisma) {
-    try {
-      const asset = await prisma.asset.findUnique({
+    const findAsset = () => prisma.asset.findUnique({
         where: { slug },
         include: {
           category: true,
@@ -27,8 +27,19 @@ async function getGalleryAsset(slug: string): Promise<MockAsset | undefined> {
           rightsHolders: { where: { isPublic: true }, orderBy: { displayOrder: "asc" } },
         },
       });
+    let asset: Awaited<ReturnType<typeof findAsset>> = null;
 
-      if (asset) {
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      try {
+        asset = await findAsset();
+        break;
+      } catch (error) {
+        console.error(`Gallery asset database lookup failed (attempt ${attempt}/3):`, error);
+        if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, attempt * 120));
+      }
+    }
+
+    if (asset) {
         const previewUrl = asset.previewUrl ?? asset.thumbnailUrl ?? asset.originalUrl ?? "";
         const generatedMetadata = asset.type === "IMAGE" ? generateImageMetadata(asset.id) : null;
         const copyrightOwner = asset.rightsHolders.find((holder) => holder.role === "COPYRIGHT_OWNER")?.name ?? "ARCHI";
@@ -93,14 +104,13 @@ async function getGalleryAsset(slug: string): Promise<MockAsset | undefined> {
           fps: asset.fps ?? undefined,
           codec: asset.codec ?? undefined,
         };
-      }
-    } catch (error) {
-      console.error("Gallery asset database lookup failed; using mock fallback:", error);
     }
   }
 
   return getMockAssetBySlug(slug);
 }
+
+const getCachedGalleryAsset = cache(getGalleryAsset);
 
 export async function generateMetadata({
   params,
@@ -108,7 +118,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const asset = await getGalleryAsset(slug);
+  const asset = await getCachedGalleryAsset(slug);
   if (!asset) return { title: "Not Found" };
   return {
     title: asset.seoTitle || asset.title,
@@ -128,7 +138,7 @@ export default async function GalleryDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const asset = await getGalleryAsset(slug);
+  const asset = await getCachedGalleryAsset(slug);
 
   if (!asset) {
     notFound();

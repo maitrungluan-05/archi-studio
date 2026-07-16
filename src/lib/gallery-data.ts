@@ -48,13 +48,17 @@ export async function getPublishedGalleryAssets(): Promise<MockAsset[]> {
   const fallback = () => getMockAssets().filter((asset) => asset.status === "PUBLISHED");
   const prisma = getPrisma();
   if (!prisma) return fallback();
-  try {
-    const assets = await prisma.asset.findMany({ where: { status: "PUBLISHED" }, include: assetInclude, orderBy: [{ publishDate: "desc" }, { createdAt: "desc" }] });
-    const databaseAssets = assets.map(toGalleryAsset);
-    const databaseIds = new Set(databaseAssets.flatMap((asset) => [asset.id, asset.slug, asset.publicId]));
-    return [...databaseAssets, ...fallback().filter((asset) => !databaseIds.has(asset.id) && !databaseIds.has(asset.slug) && !databaseIds.has(asset.publicId))];
-  } catch (error) {
-    console.error("Gallery list database lookup failed; using mock fallback:", error);
-    return fallback();
+  const findAssets = () => prisma.asset.findMany({ where: { status: "PUBLISHED" }, include: assetInclude, orderBy: [{ publishDate: "desc" as const }, { createdAt: "desc" as const }] });
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      const assets = await findAssets();
+      const databaseAssets = assets.map(toGalleryAsset);
+      const databaseIds = new Set(databaseAssets.flatMap((asset) => [asset.id, asset.slug, asset.publicId]));
+      return [...databaseAssets, ...fallback().filter((asset) => !databaseIds.has(asset.id) && !databaseIds.has(asset.slug) && !databaseIds.has(asset.publicId))];
+    } catch (error) {
+      console.error(`Gallery list database lookup failed (attempt ${attempt}/3):`, error);
+      if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, attempt * 120));
+    }
   }
+  return fallback();
 }

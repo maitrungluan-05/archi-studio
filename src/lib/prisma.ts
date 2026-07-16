@@ -7,7 +7,8 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 export function getPrisma(): PrismaClient | null {
-  const connectionString = process.env.DIRECT_URL || process.env.DATABASE_URL;
+  // Serverless requests must use the pooled connection before the direct CLI URL.
+  const connectionString = process.env.DATABASE_URL || process.env.DIRECT_URL;
   if (!connectionString) return null;
 
   if (!globalForPrisma.prisma || globalForPrisma.prismaConnectionString !== connectionString) {

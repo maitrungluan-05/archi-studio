@@ -3,7 +3,7 @@ export const SITE = {
   tagline: "Digital Copyright Archive",
   description:
     "Official digital archive of original photographs and videos. Every asset is an original copyrighted work, professionally archived and permanently protected.",
-  url: process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
+  url: process.env.NEXT_PUBLIC_SITE_URL || "https://archiregistry.vercel.app",
   copyrightOwner: process.env.NEXT_PUBLIC_COPYRIGHT_OWNER || "ARCHI",
   copyrightYear: 2015,
   email: process.env.NEXT_PUBLIC_CONTACT_EMAIL || "archive@example.com",

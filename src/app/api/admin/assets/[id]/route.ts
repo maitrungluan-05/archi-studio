@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { protectRoute, errorResponse, successResponse } from "@/lib/auth-middleware";
 import { getMockAssets } from "@/lib/mock-data";
 import { getPrisma } from "@/lib/prisma";
@@ -60,7 +61,7 @@ export async function PUT(
     const parsed = assetUpdateSchema.safeParse(await request.json());
     if (!parsed.success) return errorResponse(parsed.error.issues[0]?.message || "Dữ liệu cập nhật không hợp lệ", 400);
     const { copyrightOwner, archiveDate, ...assetData } = parsed.data;
-    const updated = await prisma.$transaction(async (tx) => {
+    const updated = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const savedAsset = await tx.asset.update({
         where: { id: existing.id },
         data: {

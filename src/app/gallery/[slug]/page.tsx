@@ -13,6 +13,7 @@ import { AssetCard } from "@/components/asset-card";
 import { formatNumber, formatDate, formatUsd, slugify } from "@/lib/utils";
 import { SITE, LICENSE_TYPES } from "@/lib/constants";
 import { generateImageMetadata } from "@/lib/asset-utils";
+import { MediaWatermark } from "@/components/media-watermark";
 
 async function getGalleryAsset(slug: string): Promise<MockAsset | undefined> {
   const prisma = getPrisma();
@@ -202,6 +203,7 @@ export default async function GalleryDetailPage({
                 sizes="(max-width: 1024px) 100vw, 66vw"
                 loading="eager"
               />
+              <MediaWatermark />
             </div>
 
             {/* Stats bar */}

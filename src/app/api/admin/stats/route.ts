@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { protectRoute, errorResponse, successResponse } from "@/lib/auth-middleware";
 import { getMockAssets } from "@/lib/mock-data";
+import { getPrisma } from "@/lib/prisma";
 
 // ============================================================
 // Admin Stats Endpoint
@@ -31,12 +32,19 @@ export async function GET(request: NextRequest) {
     );
     const totalCollections = collectionsSet.size;
 
-    // Return stats
+    const prisma = getPrisma();
+    const storyStats = prisma ? await prisma.story.aggregate({ _count: { id: true }, _sum: { views: true } }) : null;
+    const totalFrames = prisma ? await prisma.storyImage.count() : 0;
+    const publishedStories = prisma ? await prisma.story.count({ where: { status: "PUBLISHED" } }) : 0;
     return successResponse({
       totalAssets,
       totalCollections,
       totalViews,
       averageViews: Math.round(averageViews),
+      totalStories: storyStats?._count.id || 0,
+      publishedStories,
+      totalFrames,
+      storyViews: storyStats?._sum.views || 0,
     });
   } catch (error) {
     console.error("Stats endpoint error:", error);

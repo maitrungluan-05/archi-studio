@@ -6,6 +6,7 @@ import Link from "next/link";
 import { AlertCircle, CheckCircle2, ChevronLeft, LoaderCircle, Upload } from "lucide-react";
 import { DEMO_CATEGORIES } from "@/lib/mock-data";
 import { getCategoryLabelVi } from "@/lib/constants";
+import { uploadToCloudinary } from "@/lib/cloudinary-client";
 
 const initialForm = {
   title:"", subtitle:"", description:"", story:"", category:"", tags:"", displayPrice:"",
@@ -27,7 +28,8 @@ export default function AdminAssetNewPage() {
     if(!file){setError("Vui lòng chọn ảnh hoặc video.");return;}
     setLoading(true);
     try{
-      const payload=new FormData(); payload.set("file",file);
+      const uploaded=await uploadToCloudinary(file,"archi/assets");
+      const payload=new FormData(); payload.set("remoteMedia",JSON.stringify(uploaded));
       Object.entries(form).forEach(([key,value])=>payload.set(key,value));
       const response=await fetch("/api/admin/assets",{method:"POST",body:payload});
       const body=await response.json().catch(()=>null);
@@ -40,7 +42,7 @@ export default function AdminAssetNewPage() {
   return <div className="max-w-4xl p-6"><div className="mb-8 flex items-center gap-3"><Link href="/admin/assets" className="rounded-md p-2 hover:bg-border-light"><ChevronLeft size={18}/></Link><div><h1 className="text-3xl font-bold">Tải tài sản lên</h1><p className="mt-1 text-sm text-secondary">Tạo hồ sơ đầy đủ cho ảnh hoặc video ngay khi tải lên.</p></div></div>
     {error&&<div role="alert" className="mb-5 flex gap-2 rounded-md border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-600"><AlertCircle size={17}/>{error}</div>}
     <form onSubmit={submit} className="space-y-8">
-      <section className="rounded-lg border border-border bg-surface p-6"><h2 className="mb-4 text-lg font-bold">Tệp nội dung</h2><label htmlFor="file" className="block cursor-pointer rounded-lg border-2 border-dashed border-border p-8 text-center hover:border-burnt-orange/50"><Upload size={32} className="mx-auto mb-2 text-muted"/><p className="text-sm font-medium">{file?file.name:"Chọn ảnh hoặc video"}</p><p className="mt-1 text-xs text-muted">JPEG, PNG, WebP, MP4 hoặc WebM</p>{file&&<span className="mt-3 inline-flex items-center gap-1 text-xs text-olive-green"><CheckCircle2 size={13}/>{(file.size/1024/1024).toFixed(1)} MB</span>}<input id="file" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" className="sr-only" onChange={event=>setFile(event.target.files?.[0]??null)} required/></label></section>
+      <section className="rounded-lg border border-border bg-surface p-6"><h2 className="mb-4 text-lg font-bold">Tệp nội dung</h2><label htmlFor="file" className="block cursor-pointer rounded-lg border-2 border-dashed border-border p-8 text-center hover:border-burnt-orange/50"><Upload size={32} className="mx-auto mb-2 text-muted"/><p className="text-sm font-medium">{file?file.name:"Chọn ảnh hoặc video"}</p><p className="mt-1 text-xs text-muted">Tệp được tải trực tiếp lên Cloudinary · JPEG, PNG, WebP, MP4 hoặc WebM</p>{file&&<span className="mt-3 inline-flex items-center gap-1 text-xs text-olive-green"><CheckCircle2 size={13}/>{(file.size/1024/1024).toFixed(1)} MB</span>}<input id="file" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" className="sr-only" onChange={event=>setFile(event.target.files?.[0]??null)} required/></label></section>
       <section className="grid gap-5 rounded-lg border border-border bg-surface p-6"><h2 className="text-lg font-bold">Nội dung</h2><Field label="Tiêu đề" name="title" value={form.title} onChange={change} required/><Field label="Phụ đề" name="subtitle" value={form.subtitle} onChange={change}/><TextArea label="Mô tả" name="description" value={form.description} onChange={change}/><TextArea label="Câu chuyện" name="story" value={form.story} onChange={change} rows={6}/><Field label="Giá (USD)" name="displayPrice" type="number" min="0" step="0.01" prefix="$" value={form.displayPrice} onChange={change}/></section>
       <section className="grid gap-5 rounded-lg border border-border bg-surface p-6 md:grid-cols-2"><h2 className="col-span-full text-lg font-bold">Phân loại</h2><Select label="Danh mục" name="category" value={form.category} onChange={change} options={[["","Chọn danh mục"],...DEMO_CATEGORIES.map(item=>[item.name,getCategoryLabelVi(item.name)])]}/><Field label="Thẻ (phân cách bằng dấu phẩy)" name="tags" value={form.tags} onChange={change}/></section>
       <section className="grid gap-5 rounded-lg border border-border bg-surface p-6 md:grid-cols-2"><h2 className="col-span-full text-lg font-bold">Địa điểm đăng tải</h2><Field label="Quốc gia" name="country" value={form.country} onChange={change}/><Field label="Thành phố / khu vực" name="city" value={form.city} onChange={change}/><div className="md:col-span-2"><Field label="Địa điểm cụ thể" name="location" value={form.location} onChange={change}/></div></section>

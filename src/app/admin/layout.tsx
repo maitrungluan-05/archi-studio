@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { Menu, X, LogOut, Settings, FileText, FolderOpen, Tag, BarChart3 } from "lucide-react";
+import { Menu, X, LogOut, Settings, FileText, FolderOpen, Tag, BarChart3, Images } from "lucide-react";
 import { BrandLockup } from "@/components/brand-logo";
 
 export default function AdminLayout({
@@ -67,6 +67,7 @@ export default function AdminLayout({
   const navItems = [
     { label: "Tổng quan", href: "/admin", icon: BarChart3 },
     { label: "Tài sản", href: "/admin/assets", icon: FileText },
+    { label: "Bài nhiều ảnh", href: "/admin/stories", icon: Images },
     { label: "Bộ sưu tập", href: "/admin/collections", icon: FolderOpen },
     { label: "Thẻ", href: "/admin/tags", icon: Tag },
     { label: "Cài đặt", href: "/admin/settings", icon: Settings },

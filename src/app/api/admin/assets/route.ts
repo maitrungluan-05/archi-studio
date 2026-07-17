@@ -3,7 +3,6 @@ import { protectRoute, errorResponse, paginatedResponse, successResponse } from 
 import { validatePagination } from "@/lib/validators";
 import { getMockAssets } from "@/lib/mock-data";
 import { getPrisma } from "@/lib/prisma";
-import { getSupabaseAdmin } from "@/lib/supabase";
 import { generateImageMetadata, generatePublicId, generateSlug } from "@/lib/asset-utils";
 
 // ============================================================
@@ -131,7 +130,6 @@ export async function GET(request: NextRequest) {
 // ============================================================
 
 export async function POST(request: NextRequest) {
-  let uploadedPath: string | null = null;
   try {
     // Verify authentication
     const auth = protectRoute(request);
@@ -140,42 +138,31 @@ export async function POST(request: NextRequest) {
     }
 
     const prisma = getPrisma();
-    const storage = getSupabaseAdmin();
-    if (!prisma || !storage) {
-      return errorResponse("Chưa cấu hình kho lưu trữ hoặc cơ sở dữ liệu", 503);
-    }
+    if (!prisma) return errorResponse("Chưa cấu hình cơ sở dữ liệu", 503);
 
     const body = await request.formData();
     const file = body.get("file");
+    let remoteMedia: { url: string; publicId: string; resourceType: "image" | "video"; width: number; height: number; bytes: number; format: string } | null = null;
+    try { remoteMedia = JSON.parse(String(body.get("remoteMedia") || "null")); } catch { return errorResponse("Thông tin Cloudinary không hợp lệ", 400); }
     const title = body.get("title");
-    const assetType = file instanceof File && file.type.startsWith("video/") ? "VIDEO" : "IMAGE";
+    const assetType = remoteMedia?.resourceType === "video" || (file instanceof File && file.type.startsWith("video/")) ? "VIDEO" : "IMAGE";
 
     // Validate required fields
     if (typeof title !== "string" || !title.trim()) {
       return errorResponse("Tiêu đề là bắt buộc", 400);
     }
 
-    if (!(file instanceof File) || file.size === 0) {
+    if (!remoteMedia?.url && (!(file instanceof File) || file.size === 0)) {
       return errorResponse("Vui lòng chọn ảnh hoặc video", 400);
     }
 
     const allowedTypes = ["image/jpeg", "image/png", "image/webp", "video/mp4", "video/webm"];
     const maxSize = assetType === "VIDEO" ? 250 * 1024 * 1024 : 25 * 1024 * 1024;
-    if (!allowedTypes.includes(file.type)) return errorResponse("Định dạng tệp không được hỗ trợ", 415);
-    if (file.size > maxSize) return errorResponse(`Tệp vượt quá giới hạn ${assetType === "VIDEO" ? "250 MB" : "25 MB"}`, 413);
-
-    const extension = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "bin";
-    uploadedPath = `${assetType.toLowerCase()}/${new Date().getUTCFullYear()}/${crypto.randomUUID()}.${extension}`;
-    const bucket = process.env.SUPABASE_STORAGE_BUCKET || "archive-media";
-    const bytes = await file.arrayBuffer();
-    const upload = await storage.storage.from(bucket).upload(uploadedPath, bytes, {
-      contentType: file.type,
-      cacheControl: "31536000",
-      upsert: false,
-    });
-    if (upload.error) return errorResponse(`Tải lên kho lưu trữ thất bại: ${upload.error.message}`, 502);
-
-    const { data: publicData } = storage.storage.from(bucket).getPublicUrl(uploadedPath);
+    if (file instanceof File && file.size > 0) {
+      if (!allowedTypes.includes(file.type)) return errorResponse("Định dạng tệp không được hỗ trợ", 415);
+      if (file.size > maxSize) return errorResponse(`Tệp vượt quá giới hạn ${assetType === "VIDEO" ? "250 MB" : "25 MB"}`, 413);
+    }
+    if (!remoteMedia || !/^https:\/\/res\.cloudinary\.com\//.test(remoteMedia.url)) return errorResponse("URL Cloudinary không hợp lệ", 400);
     const slug = `${generateSlug(title)}-${crypto.randomUUID().slice(0, 8)}`;
     const categoryName = body.get("category");
     const category = typeof categoryName === "string" && categoryName
@@ -208,11 +195,11 @@ export async function POST(request: NextRequest) {
         keywords: String(body.get("tags") || "").trim() || null,
         displayPrice: String(body.get("displayPrice") || "").replace(/[$,\s]/g, "") || null,
         licenseType: String(body.get("licenseType") || "RIGHTS_MANAGED") as "RIGHTS_MANAGED" | "ROYALTY_FREE" | "EDITORIAL" | "PERSONAL" | "COMMERCIAL",
-        originalUrl: publicData.publicUrl,
-        thumbnailUrl: publicData.publicUrl,
-        previewUrl: publicData.publicUrl,
-        fileSize: file.size,
-        mimeType: file.type,
+        originalUrl: remoteMedia.url,
+        thumbnailUrl: remoteMedia.url,
+        previewUrl: remoteMedia.url,
+        fileSize: remoteMedia.bytes,
+        mimeType: `${remoteMedia.resourceType}/${remoteMedia.format}`,
         copyrightYear: archiveYear,
         createdAt: archiveDate,
         publishDate,
@@ -226,6 +213,9 @@ export async function POST(request: NextRequest) {
         views,
         likes,
         ...(imageMetadata ?? {}),
+        width: remoteMedia.width,
+        height: remoteMedia.height,
+        resolution: `${remoteMedia.width} x ${remoteMedia.height}`,
         categoryId: category?.id,
         ...(copyrightOwner ? {
           rightsHolders: {
@@ -237,11 +227,6 @@ export async function POST(request: NextRequest) {
 
     return successResponse(asset, 201);
   } catch (error) {
-    if (uploadedPath) {
-      const storage = getSupabaseAdmin();
-      const bucket = process.env.SUPABASE_STORAGE_BUCKET || "archive-media";
-      await storage?.storage.from(bucket).remove([uploadedPath]);
-    }
     console.error("Asset creation error:", error);
     return errorResponse("Không thể tạo tài sản", 500);
   }

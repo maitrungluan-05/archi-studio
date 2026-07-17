@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BarChart3, FileText, FolderOpen, Eye } from "lucide-react";
+import { BarChart3, FileText, FolderOpen, Eye, Images } from "lucide-react";
 import { formatNumber } from "@/lib/utils";
 
 interface Stats {
@@ -9,6 +9,10 @@ interface Stats {
   totalCollections: number;
   totalViews: number;
   averageViews: number;
+  totalStories: number;
+  publishedStories: number;
+  totalFrames: number;
+  storyViews: number;
 }
 
 export default function AdminDashboard() {
@@ -17,6 +21,7 @@ export default function AdminDashboard() {
     totalCollections: 0,
     totalViews: 0,
     averageViews: 0,
+    totalStories: 0, publishedStories: 0, totalFrames: 0, storyViews: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -39,6 +44,10 @@ export default function AdminDashboard() {
   }, []);
 
   const cards = [
+    { label: "Bài nhiều ảnh", value: stats.totalStories, icon: Images, color: "burnt-orange" },
+    { label: "Tổng khung hình", value: stats.totalFrames, icon: Images, color: "olive-green" },
+    { label: "Story đã xuất bản", value: stats.publishedStories, icon: Eye, color: "copper" },
+    { label: "Lượt xem story", value: stats.storyViews, icon: BarChart3, color: "slate-blue" },
     {
       label: "Tổng tài sản",
       value: stats.totalAssets,
@@ -73,7 +82,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         {cards.map((card) => {
           const Icon = card.icon;
           return (
@@ -104,7 +113,8 @@ export default function AdminDashboard() {
       {/* Quick Actions */}
       <div className="mt-10">
         <h2 className="text-lg font-bold text-primary mb-4">Thao tác nhanh</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <a href="/admin/stories/new" className="p-4 rounded-lg border border-border bg-surface hover:bg-burnt-orange/5 hover:border-burnt-orange/30 transition-colors no-underline"><div className="text-sm font-semibold text-primary mb-1">Tạo bài nhiều ảnh</div><p className="text-xs text-secondary">Tạo story với tối đa 25 frame.</p></a>
           <a
             href="/admin/assets/new"
             className="p-4 rounded-lg border border-border bg-surface hover:bg-burnt-orange/5 hover:border-burnt-orange/30 transition-colors no-underline"

@@ -86,6 +86,37 @@ export const assetUpdateSchema = z.object({
   tags: z.string().trim().max(2000).nullable().optional(),
 }).strict();
 
+export const storyFieldsSchema = z.object({
+  title: z.string().trim().min(1, "Tiêu đề là bắt buộc").max(160),
+  subtitle: z.string().trim().max(240).optional().default(""),
+  slug: slugSchema.optional().or(z.literal("")),
+  excerpt: z.string().trim().max(500).optional().default(""),
+  content: z.string().trim().max(10000).optional().default(""),
+  category: z.string().trim().max(160).optional().default(""),
+  tags: z.string().trim().max(2000).optional().default(""),
+  country: z.string().trim().max(120).optional().default(""),
+  city: z.string().trim().max(120).optional().default(""),
+  location: z.string().trim().max(240).optional().default(""),
+  status: assetStatusSchema.default("DRAFT"),
+  publishedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).or(z.literal("")).optional().default(""),
+  archiveDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).or(z.literal("")).optional().default(""),
+  licenseType: licenseTypeSchema.default("RIGHTS_MANAGED"),
+  copyrightOwner: z.string().trim().max(160).optional().default(""),
+  contactEmail: z.string().trim().email().or(z.literal("")).optional().default(""),
+  contactWebsite: z.string().trim().url().or(z.literal("")).optional().default(""),
+  displayPrice: z.string().regex(/^\d*(\.\d{0,2})?$/).optional().default(""),
+  views: z.coerce.number().int().min(0).default(0),
+  likes: z.coerce.number().int().min(0).default(0),
+  downloads: z.coerce.number().int().min(0).default(0),
+  favorites: z.coerce.number().int().min(0).default(0),
+  seoTitle: z.string().trim().max(160).optional().default(""),
+  seoDescription: z.string().trim().max(320).optional().default(""),
+});
+
+export const STORY_MAX_IMAGES = 25;
+export const STORY_MAX_FILE_SIZE = 10 * 1024 * 1024;
+export const STORY_MAX_TOTAL_SIZE = 100 * 1024 * 1024;
+
 // ============================================================
 // Validation Functions
 // ============================================================

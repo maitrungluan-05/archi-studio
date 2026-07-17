@@ -69,13 +69,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi" className={`${inter.variable} ${sourceSerif.variable} ${ibmPlexMono.variable} h-full`} suppressHydrationWarning>
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `try{document.documentElement.dataset.theme=localStorage.getItem("archiv-theme")==="dark"?"dark":"light"}catch{}`,
-          }}
-        />
-      </head>
       <body className="min-h-full flex flex-col font-sans">
         <a href="#main-content" className="skip-link">Skip to main content</a>
         <ThemeProvider>

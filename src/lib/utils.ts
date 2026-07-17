@@ -21,7 +21,8 @@ export function formatDateVi(date: Date | string): string {
   }).format(new Date(date));
 }
 
-export function formatNumber(num: number): string {
+export function formatNumber(value: number | null | undefined): string {
+  const num = Number.isFinite(value) ? Number(value) : 0;
   if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
   if (num >= 1_000) return `${(num / 1_000).toFixed(1)}K`;
   return num.toLocaleString();

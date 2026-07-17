@@ -57,66 +57,66 @@ enum RightsHolderRole {
 }
 
 model Asset {
-  id          String      @id @default(uuid())
-  publicId    String      @unique @map("public_id")
-  stockId     String      @unique @map("stock_id")
-  slug        String?     @unique
-  type        AssetType
-  status      AssetStatus @default(DRAFT)
+  id       String      @id @default(uuid())
+  publicId String      @unique @map("public_id")
+  stockId  String      @unique @map("stock_id")
+  slug     String?     @unique
+  type     AssetType
+  status   AssetStatus @default(DRAFT)
 
   // Content
-  title       String
-  subtitle    String?
-  description String?     @db.Text
-  story       String?     @db.Text
-  imageContent String?    @map("image_content") @db.Text
+  title        String
+  subtitle     String?
+  description  String? @db.Text
+  story        String? @db.Text
+  imageContent String? @map("image_content") @db.Text
 
   // Pricing
-  displayPrice String?    @map("display_price")
+  displayPrice String? @map("display_price")
 
   // Media URLs (stored in Supabase Storage)
-  originalUrl  String?    @map("original_url")
-  thumbnailUrl String?    @map("thumbnail_url")
-  previewUrl   String?    @map("preview_url")
+  originalUrl  String? @map("original_url")
+  thumbnailUrl String? @map("thumbnail_url")
+  previewUrl   String? @map("preview_url")
 
   // Image Dimensions
   width      Int?
   height     Int?
   resolution String?
-  fileSize   Int?         @map("file_size")
-  mimeType   String?      @map("mime_type")
+  fileSize   Int?    @map("file_size")
+  mimeType   String? @map("mime_type")
 
   // Camera EXIF
   camera       String?
   lens         String?
   iso          String?
   aperture     String?
-  focalLength  String?    @map("focal_length")
-  shutterSpeed String?    @map("shutter_speed")
+  focalLength  String? @map("focal_length")
+  shutterSpeed String? @map("shutter_speed")
 
   // Video Metadata
-  duration   Float?
-  fps        String?
-  codec      String?
-  bitrate    String?
+  duration Float?
+  fps      String?
+  codec    String?
+  bitrate  String?
 
   // Location
-  country    String?
-  city       String?
-  location   String?
+  country  String?
+  city     String?
+  location String?
 
   // Copyright
-  copyrightYear  Int?     @map("copyright_year")
-  licenseType    LicenseType @default(RIGHTS_MANAGED) @map("license_type")
+  copyrightYear Int?        @map("copyright_year")
+  licenseType   LicenseType @default(RIGHTS_MANAGED) @map("license_type")
 
   // Contact
-  publicContactEmail    String? @map("public_contact_email")
-  publicContactWebsite  String? @map("public_contact_website")
+  publicContactEmail   String? @map("public_contact_email")
+  publicContactWebsite String? @map("public_contact_website")
 
   // SEO
-  seoTitle       String?  @map("seo_title")
-  seoDescription String?  @map("seo_description") @db.Text
-  ogImage        String?  @map("og_image")
+  seoTitle       String? @map("seo_title")
+  seoDescription String? @map("seo_description") @db.Text
+  ogImage        String? @map("og_image")
 
   // Manual Statistics
   views      Int @default(0)
@@ -132,11 +132,11 @@ model Asset {
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
   // Relations
-  categoryId   String?   @map("category_id")
-  category     Category? @relation(fields: [categoryId], references: [id])
-  collectionId String?   @map("collection_id")
-  collection   Collection? @relation(fields: [collectionId], references: [id])
-  tags         AssetTag[]
+  categoryId    String?        @map("category_id")
+  category      Category?      @relation(fields: [categoryId], references: [id])
+  collectionId  String?        @map("collection_id")
+  collection    Collection?    @relation(fields: [collectionId], references: [id])
+  tags          AssetTag[]
   rightsHolders RightsHolder[]
 
   // Keywords (stored as comma-separated)
@@ -194,6 +194,65 @@ model Collection {
 }
 
 // ============================================================
+// Stories (multi-image posts)
+// ============================================================
+
+model Story {
+  id             String      @id @default(uuid())
+  title          String
+  subtitle       String?
+  slug           String      @unique
+  excerpt        String?     @db.Text
+  content        String?     @db.Text
+  category       String?
+  tags           String?     @db.Text
+  country        String?
+  city           String?
+  location       String?
+  status         AssetStatus @default(DRAFT)
+  licenseType    LicenseType @default(RIGHTS_MANAGED) @map("license_type")
+  copyrightOwner String?     @map("copyright_owner")
+  contactEmail   String?     @map("contact_email")
+  contactWebsite String?     @map("contact_website")
+  displayPrice   String?     @map("display_price")
+  views          Int         @default(0)
+  likes          Int         @default(0)
+  downloads      Int         @default(0)
+  favorites      Int         @default(0)
+  seoTitle       String?     @map("seo_title")
+  seoDescription String?     @map("seo_description") @db.Text
+  publishedAt    DateTime?   @map("published_at")
+  archiveDate    DateTime?   @map("archive_date")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  images StoryImage[]
+
+  @@index([status, publishedAt])
+  @@index([createdAt])
+  @@map("stories")
+}
+
+model StoryImage {
+  id        String   @id @default(uuid())
+  storyId   String   @map("story_id")
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  url       String
+  path      String
+  alt       String?
+  caption   String?  @db.Text
+  width     Int
+  height    Int
+  fileSize  Int      @map("file_size")
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([storyId, sortOrder])
+  @@index([storyId])
+  @@map("story_images")
+}
+
+// ============================================================
 // Tags
 // ============================================================
 
@@ -223,29 +282,28 @@ model AssetTag {
 // ============================================================
 
 model RightsHolder {
-  id            String                @id @default(uuid())
-  assetId       String                @map("asset_id")
-  asset         Asset                 @relation(fields: [assetId], references: [id], onDelete: Cascade)
-  
-  name          String
-  role          RightsHolderRole
-  organization  String?
-  bio           String?               @db.Text
-  email         String?
-  website       String?
-  country       String?
-  
-  displayOrder  Int                   @default(0) @map("display_order")
-  isPrimary     Boolean               @default(false) @map("is_primary")
-  isPublic      Boolean               @default(true) @map("is_public")
-  
-  createdAt     DateTime              @default(now()) @map("created_at")
-  updatedAt     DateTime              @updatedAt @map("updated_at")
-  
+  id      String @id @default(uuid())
+  assetId String @map("asset_id")
+  asset   Asset  @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  name         String
+  role         RightsHolderRole
+  organization String?
+  bio          String?          @db.Text
+  email        String?
+  website      String?
+  country      String?
+
+  displayOrder Int     @default(0) @map("display_order")
+  isPrimary    Boolean @default(false) @map("is_primary")
+  isPublic     Boolean @default(true) @map("is_public")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
   @@index([assetId])
   @@map("rights_holders")
 }
-
 
 // ============================================================
 // Settings

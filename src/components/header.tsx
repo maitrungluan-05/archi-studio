@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 
 const links = [
   ["Home", "/"], ["Explore", "/explore"], ["Rooms", "/categories"],
-  ["Collections", "/collections"], ["Film", "/videos"], ["About", "/about"],
+  ["Collections", "/collections"], ["Stories", "/stories"], ["Film", "/videos"], ["About", "/about"],
 ] as const;
 
 export function Header() {

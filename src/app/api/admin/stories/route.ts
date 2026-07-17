@@ -4,6 +4,7 @@ import { getPrisma } from "@/lib/prisma";
 import { removeStoryImages, uploadStoryImages, validateStoryFiles, type StoryImageMeta } from "@/lib/story-upload";
 import { storyFieldsSchema, validatePagination } from "@/lib/validators";
 import { slugify } from "@/lib/utils";
+import { generateContentDefaults } from "@/lib/auto-content";
 
 export async function GET(request: NextRequest) {
   const auth = protectRoute(request); if (!auth.authenticated) return auth.response;
@@ -34,9 +35,10 @@ export async function POST(request: NextRequest) {
     } else validateStoryFiles(files);
     let metas: StoryImageMeta[] = []; try { metas = JSON.parse(String(body.get("imageMeta") || "[]")); } catch { return errorResponse("Thông tin ảnh không hợp lệ", 400); }
     const slug = slugify(parsed.data.slug || parsed.data.title);
+    const generated = generateContentDefaults(parsed.data.title, parsed.data.category, parsed.data.location);
     const exists = await prisma.story.findUnique({ where: { slug }, select: { id: true } });
     if (exists) return errorResponse("Slug đã được sử dụng", 409);
-    const story = await prisma.story.create({ data: { title: parsed.data.title, subtitle: parsed.data.subtitle || null, slug, excerpt: parsed.data.excerpt || null, content: parsed.data.content || null, category: parsed.data.category || null, tags: parsed.data.tags || null, country: parsed.data.country || null, city: parsed.data.city || null, location: parsed.data.location || null, status: parsed.data.status, licenseType: parsed.data.licenseType, copyrightOwner: parsed.data.copyrightOwner || null, contactEmail: parsed.data.contactEmail || null, contactWebsite: parsed.data.contactWebsite || null, displayPrice: parsed.data.displayPrice || null, views: parsed.data.views, likes: parsed.data.likes, downloads: parsed.data.downloads, favorites: parsed.data.favorites, seoTitle: parsed.data.seoTitle || null, seoDescription: parsed.data.seoDescription || null, publishedAt: parsed.data.status === "PUBLISHED" ? (parsed.data.publishedAt ? new Date(`${parsed.data.publishedAt}T00:00:00.000Z`) : new Date()) : null, archiveDate: parsed.data.archiveDate ? new Date(`${parsed.data.archiveDate}T00:00:00.000Z`) : null } });
+    const story = await prisma.story.create({ data: { title: parsed.data.title, subtitle: parsed.data.subtitle || null, slug, excerpt: parsed.data.excerpt || generated.description, content: parsed.data.content || generated.story, category: parsed.data.category || null, tags: parsed.data.tags || generated.tags, country: parsed.data.country || null, city: parsed.data.city || null, location: parsed.data.location || null, status: parsed.data.status, licenseType: parsed.data.licenseType, copyrightOwner: parsed.data.copyrightOwner || null, contactEmail: parsed.data.contactEmail || null, contactWebsite: parsed.data.contactWebsite || null, displayPrice: parsed.data.displayPrice || generated.displayPrice, views: parsed.data.views, likes: parsed.data.likes, downloads: parsed.data.downloads, favorites: parsed.data.favorites, seoTitle: parsed.data.seoTitle || generated.seoTitle, seoDescription: parsed.data.seoDescription || generated.seoDescription, publishedAt: parsed.data.status === "PUBLISHED" ? (parsed.data.publishedAt ? new Date(`${parsed.data.publishedAt}T00:00:00.000Z`) : new Date()) : null, archiveDate: parsed.data.archiveDate ? new Date(`${parsed.data.archiveDate}T00:00:00.000Z`) : null } });
     storyId = story.id;
     const images = remoteImages.length ? remoteImages.map((image) => ({ ...image, alt: image.alt?.trim() || null, caption: image.caption?.trim() || null })) : await uploadStoryImages(files, metas, story.id); uploadedPaths = remoteImages.length ? [] : images.map((image) => image.path);
     const result = await prisma.story.update({ where: { id: story.id }, data: { images: { create: images.map((image, sortOrder) => ({ ...image, sortOrder })) } }, include: { images: { orderBy: { sortOrder: "asc" } } } });

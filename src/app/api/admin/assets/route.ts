@@ -4,6 +4,7 @@ import { validatePagination } from "@/lib/validators";
 import { getMockAssets } from "@/lib/mock-data";
 import { getPrisma } from "@/lib/prisma";
 import { generateImageMetadata, generatePublicId, generateSlug } from "@/lib/asset-utils";
+import { generateContentDefaults } from "@/lib/auto-content";
 
 // ============================================================
 // Admin Assets List Endpoint
@@ -174,6 +175,7 @@ export async function POST(request: NextRequest) {
       ? (requestedPublishDate ? new Date(`${requestedPublishDate}T00:00:00.000Z`) : new Date())
       : null;
     const copyrightOwner = String(body.get("copyrightOwner") || "").trim();
+    const generated = generateContentDefaults(title.trim(), String(body.get("category") || ""), String(body.get("location") || ""));
     const views = Math.max(0, Number.parseInt(String(body.get("views") || "0"), 10) || 0);
     const likes = Math.max(0, Number.parseInt(String(body.get("likes") || "0"), 10) || 0);
     const requestedArchiveDate = String(body.get("archiveDate") || "");
@@ -190,10 +192,10 @@ export async function POST(request: NextRequest) {
         status,
         title: title.trim(),
         subtitle: String(body.get("subtitle") || "").trim() || null,
-        description: String(body.get("description") || "").trim() || null,
-        story: String(body.get("story") || "").trim() || null,
-        keywords: String(body.get("tags") || "").trim() || null,
-        displayPrice: String(body.get("displayPrice") || "").replace(/[$,\s]/g, "") || null,
+        description: String(body.get("description") || "").trim() || generated.description,
+        story: String(body.get("story") || "").trim() || generated.story,
+        keywords: String(body.get("tags") || "").trim() || generated.tags,
+        displayPrice: String(body.get("displayPrice") || "").replace(/[$,\s]/g, "") || generated.displayPrice,
         licenseType: String(body.get("licenseType") || "RIGHTS_MANAGED") as "RIGHTS_MANAGED" | "ROYALTY_FREE" | "EDITORIAL" | "PERSONAL" | "COMMERCIAL",
         originalUrl: remoteMedia.url,
         thumbnailUrl: remoteMedia.url,
@@ -205,8 +207,8 @@ export async function POST(request: NextRequest) {
         publishDate,
         publicContactEmail: String(body.get("publicContactEmail") || "").trim() || null,
         publicContactWebsite: String(body.get("publicContactWebsite") || "").trim() || null,
-        seoTitle: String(body.get("seoTitle") || "").trim() || null,
-        seoDescription: String(body.get("seoDescription") || "").trim() || null,
+        seoTitle: String(body.get("seoTitle") || "").trim() || generated.seoTitle,
+        seoDescription: String(body.get("seoDescription") || "").trim() || generated.seoDescription,
         country: String(body.get("country") || "").trim() || null,
         city: String(body.get("city") || "").trim() || null,
         location: String(body.get("location") || "").trim() || null,

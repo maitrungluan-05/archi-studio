@@ -10,6 +10,7 @@ export type StorySlide = { id:string; url:string; alt:string|null; caption:strin
 export function StorySlider({ slug, title, slides, initialFrame }: { slug:string; title:string; slides:StorySlide[]; initialFrame:number }) {
   const [frame, setFrame] = useState(initialFrame);
   const index = frame - 1, slide = slides[index];
+  const isLandscape = slide.width / slide.height >= 1.15;
   const go = useCallback((nextFrame:number, push=true) => {
     if (nextFrame < 1 || nextFrame > slides.length) return;
     setFrame(nextFrame);
@@ -27,10 +28,9 @@ export function StorySlider({ slug, title, slides, initialFrame }: { slug:string
   }, [frame, go, slides.length]);
 
   return <>
-    <div className="relative grid min-h-[420px] place-items-center overflow-hidden bg-border-light md:min-h-[620px]">
-      <Image key={`backdrop-${slide.id}`} src={slide.url} alt="" fill sizes="(max-width: 1024px) 100vw, 66vw" unoptimized aria-hidden className="scale-110 object-cover opacity-45 blur-2xl saturate-75"/>
-      <div className="absolute inset-0 bg-black/15" aria-hidden="true"/>
-      <Image key={slide.id} src={slide.url} alt={slide.alt||title} width={slide.width} height={slide.height} sizes="(max-width: 1024px) 100vw, 66vw" priority unoptimized className="relative z-10 max-h-[78vh] h-auto w-auto max-w-full object-contain shadow-2xl"/>
+    <div className={`relative grid place-items-center overflow-hidden bg-border-light ${isLandscape?"":"min-h-[420px] md:min-h-[620px]"}`} style={isLandscape?{aspectRatio:`${slide.width}/${slide.height}`}:undefined}>
+      {!isLandscape&&<><Image key={`backdrop-${slide.id}`} src={slide.url} alt="" fill sizes="(max-width: 1024px) 100vw, 66vw" unoptimized aria-hidden className="scale-110 object-cover opacity-45 blur-2xl saturate-75"/><div className="absolute inset-0 bg-black/15" aria-hidden="true"/></>}
+      {isLandscape?<Image key={slide.id} src={slide.url} alt={slide.alt||title} fill sizes="(max-width: 1024px) 100vw, 66vw" priority unoptimized className="z-10 object-contain"/>:<Image key={slide.id} src={slide.url} alt={slide.alt||title} width={slide.width} height={slide.height} sizes="(max-width: 1024px) 100vw, 66vw" priority unoptimized className="relative z-10 max-h-[78vh] h-auto w-auto max-w-full object-contain shadow-2xl"/>}
       <MediaWatermark/>
       {frame>1&&<button type="button" onClick={()=>go(frame-1)} aria-label="Ảnh trước" className="absolute left-3 z-20 grid h-11 w-11 place-items-center rounded-full bg-black/55 text-white backdrop-blur-sm hover:bg-black/80"><ArrowLeft size={20}/></button>}
       {frame<slides.length&&<button type="button" onClick={()=>go(frame+1)} aria-label="Ảnh tiếp theo" className="absolute right-3 z-20 grid h-11 w-11 place-items-center rounded-full bg-black/55 text-white backdrop-blur-sm hover:bg-black/80"><ArrowRight size={20}/></button>}

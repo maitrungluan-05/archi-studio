@@ -197,9 +197,18 @@ export default async function GalleryDetailPage({
             <div id="preview" className="relative aspect-[4/3] overflow-hidden bg-border-light">
               <Image
                 src={asset.previewUrl}
+                alt=""
+                fill
+                aria-hidden
+                className="scale-110 object-cover opacity-40 blur-2xl saturate-75"
+                sizes="(max-width: 1024px) 100vw, 66vw"
+              />
+              <div className="absolute inset-0 bg-black/10" aria-hidden="true" />
+              <Image
+                src={asset.previewUrl}
                 alt={asset.imageContent || asset.title}
                 fill
-                className="object-cover"
+                className="z-10 object-contain"
                 sizes="(max-width: 1024px) 100vw, 66vw"
                 loading="eager"
               />
